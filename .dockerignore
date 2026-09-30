@@ -1,0 +1,13 @@
+**/node_modules
+**/.medusa
+**/.env
+**/.env.*
+**/admin-credentials.txt
+.git
+.yarn/cache
+.yarn/unplugged
+www
+thoughts
+memory
+.claude
+.changeset

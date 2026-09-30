@@ -4,6 +4,7 @@ import { HttpTypes } from "@medusajs/framework/types"
 import { AdditionalData } from "@medusajs/types"
 import { Modules } from "@medusajs/utils"
 import { refetchCart } from "../../helpers"
+import { syncReturnablePackaging } from "../../returnable-packaging"
 
 export const POST = async (
   req: MedusaRequest<
@@ -21,6 +22,7 @@ export const POST = async (
     },
   })
 
+  await syncReturnablePackaging(req.params.id, req.scope)
   const cart = await refetchCart(
     req.params.id,
     req.scope,

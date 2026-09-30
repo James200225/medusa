@@ -1,0 +1,87 @@
+name: Build and deploy Medusa backend
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}-backend
+          tags: |
+            type=sha,prefix=sha-,format=long
+            type=raw,value=latest
+
+      - name: Build and publish production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-vps:
+    needs: build-and-publish
+    if: ${{ vars.DEPLOY_SSH_HOST != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out deployment configuration
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_PRIVATE_KEY" || { echo "Missing DEPLOY_SSH_PRIVATE_KEY"; exit 1; }
+          test -n "$SSH_KNOWN_HOSTS" || { echo "Missing DEPLOY_SSH_KNOWN_HOSTS"; exit 1; }
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+
+      - name: Deploy image to VPS
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_SSH_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_SSH_USER }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_SSH_PORT }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          IMAGE: ghcr.io/${{ github.repository }}-backend:sha-${{ github.sha }}
+        run: |
+          test -n "$DEPLOY_USER" || { echo "Missing repository variable DEPLOY_SSH_USER"; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "Missing repository variable DEPLOY_PATH"; exit 1; }
+          port="${DEPLOY_PORT:-22}"
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          ssh -i "$HOME/.ssh/id_ed25519" -p "$port" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$target" "mkdir -p '$DEPLOY_PATH'"
+          scp -i "$HOME/.ssh/id_ed25519" -P "$port" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes docker-compose.prod.yml "$target:$DEPLOY_PATH/docker-compose.prod.yml"
+          ssh -i "$HOME/.ssh/id_ed25519" -p "$port" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$target" \
+            "cd '$DEPLOY_PATH' && MEDUSA_IMAGE='$IMAGE' docker compose -f docker-compose.prod.yml pull && MEDUSA_IMAGE='$IMAGE' docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans"

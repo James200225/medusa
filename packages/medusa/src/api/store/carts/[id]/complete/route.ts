@@ -9,6 +9,7 @@ import {
 } from "@medusajs/framework/utils"
 import { refetchCart } from "../../helpers"
 import { defaultStoreCartFields } from "../../query-config"
+import { syncReturnablePackaging } from "../../returnable-packaging"
 
 export const POST = async (
   req: MedusaRequest<{}, HttpTypes.SelectParams>,
@@ -17,6 +18,7 @@ export const POST = async (
   const cart_id = req.params.id
   const we = req.scope.resolve(Modules.WORKFLOW_ENGINE)
 
+  await syncReturnablePackaging(cart_id, req.scope)
   const { errors, result, transaction } = await we.run(completeCartWorkflowId, {
     input: { id: cart_id },
     throwOnError: false,

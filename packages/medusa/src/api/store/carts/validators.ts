@@ -5,10 +5,20 @@ import { createSelectParams, WithAdditionalData } from "../../utils/validators"
 export type StoreGetPromotionType = z.infer<typeof StoreGetCartsCart>
 export const StoreGetCartsCart = createSelectParams()
 
+const StoreCartLineItemMetadata = z
+  .record(z.string(), z.unknown())
+  .nullish()
+  .refine(
+    (metadata) =>
+      metadata?.returns_bottle === undefined ||
+      typeof metadata.returns_bottle === "boolean",
+    "metadata.returns_bottle debe ser verdadero o falso."
+  )
+
 const ItemSchema = z.object({
   variant_id: z.string(),
   quantity: z.number().gt(0),
-  metadata: z.record(z.string(), z.unknown()).nullish(),
+  metadata: StoreCartLineItemMetadata,
 })
 
 export type StoreCreateCartType = z.infer<typeof CreateCart>
@@ -74,7 +84,7 @@ export type StoreAddCartLineItemType = z.infer<typeof StoreAddCartLineItem>
 export const StoreAddCartLineItem = z.object({
   variant_id: z.string(),
   quantity: z.number().gt(0),
-  metadata: z.record(z.string(), z.unknown()).nullish(),
+  metadata: StoreCartLineItemMetadata,
 })
 
 export type StoreUpdateCartLineItemType = z.infer<
@@ -82,7 +92,7 @@ export type StoreUpdateCartLineItemType = z.infer<
 >
 export const StoreUpdateCartLineItem = z.object({
   quantity: z.number().gte(0), // can be 0 to remove the item from the cart
-  metadata: z.record(z.string(), z.unknown()).nullish(),
+  metadata: StoreCartLineItemMetadata,
 })
 
 export type StoreAddCartShippingMethodsType = z.infer<

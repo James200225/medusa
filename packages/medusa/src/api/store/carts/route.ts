@@ -9,6 +9,7 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { refetchCart } from "./helpers"
+import { syncReturnablePackaging } from "./returnable-packaging"
 
 export const POST = async (
   req: AuthenticatedMedusaRequest<
@@ -26,6 +27,7 @@ export const POST = async (
     input: workflowInput as CreateCartWorkflowInputDTO,
   })
 
+  await syncReturnablePackaging(result.id, req.scope)
   const cart = await refetchCart(result.id, req.scope, req.queryConfig.fields)
 
   res.status(200).json({ cart })
