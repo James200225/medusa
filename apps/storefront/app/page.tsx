@@ -11,6 +11,8 @@ import {
   money,
   storeApi,
 } from "@/lib/store-api"
+import { getStoreHoursStatus, type StoreHoursStatus } from "@/lib/store-hours"
+import { buildWhatsAppOrderMessage } from "@/lib/whatsapp-order"
 
 const CART_KEY = "tada-medusa-cart"
 const LOCATION_KEY = "tada-delivery-location"
@@ -31,6 +33,16 @@ type SelectedLocation = {
   longitude: number
   estimated_delivery_time?: string
   sales_channel_id?: string
+}
+
+type CheckoutPaymentMethod = "bank_transfer" | "cash"
+
+type CheckoutDetails = {
+  receiverName: string
+  contactPhone: string
+  deliveryReference: string
+  paymentMethod: CheckoutPaymentMethod
+  cashReceived: string
 }
 
 function productPrice(product: StoreProduct) {
@@ -147,12 +159,14 @@ function RecycleIcon() {
 function Header({
   cartCount,
   location,
+  storeHours,
   onOpenCart,
   onOpenLocation,
   onSearch,
 }: {
   cartCount: number
   location: SelectedLocation | null
+  storeHours: StoreHoursStatus | null
   onOpenCart: () => void
   onOpenLocation: () => void
   onSearch: (value: string) => void
@@ -216,10 +230,23 @@ function Header({
       </div>
       <div className="header-promise">
         <div className="page-width promise-inner">
-          <span className="promise-dot" />
-          {location?.estimated_delivery_time
-            ? `Llegamos en ${location.estimated_delivery_time}`
-            : "Entrega rápida en tu zona"}
+          {storeHours?.isOpen ? (
+            <span className="store-hours-badge store-hours-open">
+              <span className="store-hours-dot" />
+              <span>
+                Abierto · Entrega en{" "}
+                {location?.estimated_delivery_time ?? "30-45 min"}
+              </span>
+            </span>
+          ) : storeHours ? (
+            <span className="store-hours-badge store-hours-closed">
+              🟡 Cerrado por ahora · Abrimos {storeHours.nextOpening}
+            </span>
+          ) : (
+            <span className="store-hours-badge store-hours-pending">
+              Verificando horario de atención…
+            </span>
+          )}
           <span className="promise-separator">·</span>
           Bebidas bien frías, sin vueltas
         </div>
@@ -490,19 +517,25 @@ function LocationDialog({
 function CartDrawer({
   cart,
   location,
+  storeHours,
   notice,
   onClose,
   onQuantityChange,
   onCheckout,
   busyLineId,
+  checkoutDetails,
+  onCheckoutDetailsChange,
 }: {
   cart: StoreCart | null
   location: SelectedLocation | null
+  storeHours: StoreHoursStatus | null
   notice: string
   onClose: () => void
   onQuantityChange: (line: CartLine, quantity: number) => void
   onCheckout: () => void
   busyLineId: string | null
+  checkoutDetails: CheckoutDetails
+  onCheckoutDetailsChange: (field: keyof CheckoutDetails, value: string) => void
 }) {
   const items = cart?.items ?? []
   const beverageItems = items.filter((item) => !isDepositLine(item))
@@ -516,6 +549,17 @@ function CartDrawer({
     0
   )
   const deliveryTotal = cart?.shipping_total ?? 0
+  const orderTotal = cart?.total ?? 0
+  const cashReceivedAmount = Number(checkoutDetails.cashReceived)
+  const cashAmountValid =
+    checkoutDetails.paymentMethod !== "cash" ||
+    (Number.isFinite(cashReceivedAmount) && cashReceivedAmount >= orderTotal)
+  const canConfirm =
+    Boolean(location) &&
+    Boolean(storeHours?.isOpen) &&
+    checkoutDetails.receiverName.trim().length > 0 &&
+    checkoutDetails.contactPhone.replace(/\D/g, "").length >= 7 &&
+    cashAmountValid
 
   return (
     <div className="modal-backdrop drawer-backdrop" onMouseDown={onClose}>
@@ -650,12 +694,180 @@ function CartDrawer({
                   }.`
                 : "Confirma primero una dirección para verificar la cobertura."}
             </p>
+            <p className="age-delivery-warning">
+              ⚠️ El repartidor solicitará tu cédula física original al momento
+              de la entrega.
+            </p>
+            <div className="checkout-fields">
+              <label className="checkout-field">
+                <span>Nombre y apellido de quien recibe</span>
+                <input
+                  autoComplete="name"
+                  value={checkoutDetails.receiverName}
+                  onChange={(event) =>
+                    onCheckoutDetailsChange(
+                      "receiverName",
+                      event.currentTarget.value
+                    )
+                  }
+                  placeholder="Nombre completo"
+                  required
+                />
+              </label>
+              <label className="checkout-field">
+                <span>Teléfono de contacto</span>
+                <input
+                  autoComplete="tel"
+                  type="tel"
+                  inputMode="tel"
+                  value={checkoutDetails.contactPhone}
+                  onChange={(event) =>
+                    onCheckoutDetailsChange(
+                      "contactPhone",
+                      event.currentTarget.value
+                    )
+                  }
+                  placeholder="09 1234 5678"
+                  required
+                />
+              </label>
+              <label className="checkout-field">
+                <span>Referencia o detalle de entrega</span>
+                <textarea
+                  autoComplete="address-line2"
+                  value={checkoutDetails.deliveryReference}
+                  onChange={(event) =>
+                    onCheckoutDetailsChange(
+                      "deliveryReference",
+                      event.currentTarget.value
+                    )
+                  }
+                  placeholder="Casa, departamento, timbre o portería"
+                  rows={2}
+                />
+              </label>
+              <fieldset className="payment-method-field">
+                <legend>Método de pago</legend>
+                <label className="payment-method-option">
+                  <input
+                    type="radio"
+                    name="checkout-payment-method"
+                    value="bank_transfer"
+                    checked={checkoutDetails.paymentMethod === "bank_transfer"}
+                    onChange={() =>
+                      onCheckoutDetailsChange("paymentMethod", "bank_transfer")
+                    }
+                  />
+                  <span>
+                    <strong>Transferencia bancaria</strong>
+                    <small>Se te enviarán los datos bancarios al chat.</small>
+                  </span>
+                </label>
+                <label className="payment-method-option">
+                  <input
+                    type="radio"
+                    name="checkout-payment-method"
+                    value="cash"
+                    checked={checkoutDetails.paymentMethod === "cash"}
+                    onChange={() =>
+                      onCheckoutDetailsChange("paymentMethod", "cash")
+                    }
+                  />
+                  <span>
+                    <strong>Efectivo al recibir</strong>
+                    <small>Paga al repartidor al recibir tu pedido.</small>
+                  </span>
+                </label>
+              </fieldset>
+              {checkoutDetails.paymentMethod === "cash" && (
+                <div className="cash-payment-fields">
+                  <label className="checkout-field">
+                    <span>¿Con cuánto pagas?</span>
+                    <input
+                      type="number"
+                      min={orderTotal}
+                      step="0.01"
+                      inputMode="decimal"
+                      value={checkoutDetails.cashReceived}
+                      onChange={(event) =>
+                        onCheckoutDetailsChange(
+                          "cashReceived",
+                          event.currentTarget.value
+                        )
+                      }
+                      placeholder={money(orderTotal, cart?.currency_code)}
+                    />
+                  </label>
+                  <div
+                    className="cash-quick-amounts"
+                    aria-label="Montos rápidos"
+                  >
+                    {[10, 20, 50].map((amount) => (
+                      <button
+                        className="cash-quick-amount"
+                        type="button"
+                        key={amount}
+                        onClick={() =>
+                          onCheckoutDetailsChange(
+                            "cashReceived",
+                            String(amount)
+                          )
+                        }
+                        disabled={amount < orderTotal}
+                      >
+                        ${amount}
+                      </button>
+                    ))}
+                    <button
+                      className="cash-quick-amount"
+                      type="button"
+                      onClick={() =>
+                        onCheckoutDetailsChange(
+                          "cashReceived",
+                          orderTotal.toFixed(2)
+                        )
+                      }
+                    >
+                      Monto exacto
+                    </button>
+                  </div>
+                  {checkoutDetails.cashReceived &&
+                    Number.isFinite(cashReceivedAmount) && (
+                      <p
+                        className={`cash-change ${
+                          cashAmountValid ? "" : "cash-change-short"
+                        }`}
+                        role="status"
+                      >
+                        {cashAmountValid
+                          ? `Cambio a devolver: ${money(
+                              cashReceivedAmount - orderTotal,
+                              cart?.currency_code
+                            )}`
+                          : `El monto debe cubrir el total de ${money(
+                              orderTotal,
+                              cart?.currency_code
+                            )}.`}
+                      </p>
+                    )}
+                </div>
+              )}
+            </div>
             <button
               className="primary-button full-button"
               onClick={onCheckout}
-              disabled={!location}
+              disabled={!canConfirm}
             >
-              Confirmar pedido por WhatsApp
+              {!storeHours
+                ? "Verificando horario…"
+                : !storeHours.isOpen
+                ? "Fuera de horario de entrega"
+                : !checkoutDetails.receiverName.trim() ||
+                  checkoutDetails.contactPhone.replace(/\D/g, "").length < 7
+                ? "Completa los datos de quien recibe"
+                : !cashAmountValid
+                ? "Indica un monto suficiente"
+                : "Confirmar pedido por WhatsApp"}
             </button>
             <button className="drawer-continue" onClick={onClose}>
               Seguir comprando
@@ -680,6 +892,14 @@ export default function HomePage() {
   const [region, setRegion] = useState<StoreRegion | null>(null)
   const [cart, setCart] = useState<StoreCart | null>(null)
   const [location, setLocation] = useState<SelectedLocation | null>(null)
+  const [storeHours, setStoreHours] = useState<StoreHoursStatus | null>(null)
+  const [checkoutDetails, setCheckoutDetails] = useState<CheckoutDetails>({
+    receiverName: "",
+    contactPhone: "",
+    deliveryReference: "",
+    paymentMethod: "bank_transfer",
+    cashReceived: "",
+  })
   const [returnsBottleChoices, setReturnsBottleChoices] = useState<
     Record<string, boolean>
   >({})
@@ -695,6 +915,25 @@ export default function HomePage() {
   const [locationBusy, setLocationBusy] = useState(false)
   const [busyVariantId, setBusyVariantId] = useState<string | null>(null)
   const [busyLineId, setBusyLineId] = useState<string | null>(null)
+
+  function updateCheckoutDetails(field: keyof CheckoutDetails, value: string) {
+    setCheckoutDetails((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === "paymentMethod" && value !== "cash"
+        ? { cashReceived: "" }
+        : {}),
+    }))
+  }
+
+  useEffect(() => {
+    const updateStoreHours = () => {
+      setStoreHours(getStoreHoursStatus())
+    }
+    updateStoreHours()
+    const interval = window.setInterval(updateStoreHours, 60_000)
+    return () => window.clearInterval(interval)
+  }, [])
 
   const loadCart = useCallback(async (cartId: string) => {
     const result = await storeApi<{ cart: StoreCart }>(
@@ -1138,6 +1377,19 @@ export default function HomePage() {
       setNotice("Confirma una dirección y agrega productos antes de continuar.")
       return
     }
+    if (!storeHours?.isOpen) {
+      setNotice(
+        "Fuera de horario de entrega. Puedes confirmar tu pedido cuando abramos."
+      )
+      return
+    }
+    if (
+      !checkoutDetails.receiverName.trim() ||
+      checkoutDetails.contactPhone.replace(/\D/g, "").length < 7
+    ) {
+      setNotice("Completa el nombre y un teléfono de contacto válido.")
+      return
+    }
     const beverageLines = cart.items.filter((item) => !isDepositLine(item))
     const depositLines = cart.items.filter(isDepositLine)
     const beverageSubtotal = beverageLines.reduce(
@@ -1148,39 +1400,44 @@ export default function HomePage() {
       (total, item) => total + Number(item.unit_price) * item.quantity,
       0
     )
-    const bottlesToCollect = beverageLines.reduce((total, item) => {
-      if (!isReturnableCartLine(item)) {
-        return total
-      }
-      return total + Number(item.quantity)
-    }, 0)
     const deliveryTotal = Number(cart.shipping_total ?? 0)
     const whatsappPhone = (
       process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? ""
     ).replace(/\D/g, "")
-    const coordinates = [
-      location.latitude.toFixed(6),
-      location.longitude.toFixed(6),
-    ].join(", ")
-    const message = [
-      "Hola, quiero confirmar este pedido de TaDa Delivery:",
-      `Dirección de entrega: ${location.address}`,
-      `Coordenadas: ${coordinates}`,
-      ...beverageLines.map(
-        (item) => `• ${item.product_title ?? item.title} x ${item.quantity}`
-      ),
-      `Subtotal bebidas: ${money(beverageSubtotal, cart.currency_code)}`,
-      `Envases vacíos a recolectar en la puerta: ${bottlesToCollect}`,
-      `Depósito de envases: ${money(depositTotal, cart.currency_code)}`,
-      `Costo de envío: ${money(deliveryTotal, cart.currency_code)}${
-        deliveryTotal > 0 ? "" : " (por confirmar)"
-      }`,
-      `Total final: ${money(cart.total, cart.currency_code)}${
-        deliveryTotal > 0
-          ? " (incluye envío)"
-          : " (envío pendiente de confirmar)"
-      }`,
-    ].join("\n")
+    if (
+      checkoutDetails.paymentMethod === "cash" &&
+      (!Number.isFinite(Number(checkoutDetails.cashReceived)) ||
+        Number(checkoutDetails.cashReceived) < Number(cart.total))
+    ) {
+      setNotice("El monto en efectivo debe cubrir el total del pedido.")
+      return
+    }
+    const message = buildWhatsAppOrderMessage({
+      receiverName: checkoutDetails.receiverName,
+      contactPhone: checkoutDetails.contactPhone,
+      deliveryAddress: location.address,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      deliveryReference: checkoutDetails.deliveryReference,
+      paymentMethod: checkoutDetails.paymentMethod,
+      cashReceived: Number(checkoutDetails.cashReceived),
+      currencyCode: cart.currency_code,
+      items: beverageLines.map((item) => {
+        const product = products.find(
+          (candidate) => candidate.id === item.product_id
+        )
+        return {
+          title: item.product_title ?? item.title,
+          quantity: item.quantity,
+          returnsBottle: isReturnableCartLine(item),
+          servesCold: product ? isCold(product) : false,
+        }
+      }),
+      beverageSubtotal,
+      depositTotal,
+      deliveryTotal,
+      total: Number(cart.total),
+    })
     window.open(
       `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`,
       "_blank",
@@ -1195,6 +1452,7 @@ export default function HomePage() {
       <Header
         cartCount={cartCount}
         location={location}
+        storeHours={storeHours}
         onOpenCart={() => void openCart()}
         onOpenLocation={() => {
           setLocationMessage("")
@@ -1460,11 +1718,14 @@ export default function HomePage() {
         <CartDrawer
           cart={cart}
           location={location}
+          storeHours={storeHours}
           notice={notice || cartError}
           onClose={() => setShowCart(false)}
           onQuantityChange={changeCartLineQuantity}
           onCheckout={sendOrderToWhatsApp}
           busyLineId={busyLineId}
+          checkoutDetails={checkoutDetails}
+          onCheckoutDetailsChange={updateCheckoutDetails}
         />
       )}
     </>

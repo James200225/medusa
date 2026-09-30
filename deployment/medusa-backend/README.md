@@ -9,16 +9,30 @@ that triggered the deployment.
 ## Configure and run with Docker Compose
 
 1. Copy `.env.production.example` to `.env.production` and set the PostgreSQL,
-   Redis, CORS, secrets, and S3-compatible storage values. Do not commit that
-   file.
-2. Build and start both the API and worker:
+   Redis, CORS, secrets, publishable key, and S3-compatible storage values. Do
+   not commit that file. CORS values are comma-separated HTTP(S) origins with
+   no paths; whitespace around commas is ignored. The example includes local
+   storefront/Admin origins and illustrative production origins. Remove local
+   origins from the production deployment if they are not needed.
+2. Run `npm run check:prod-readiness` at the repository root (or
+   `npm run check:prod-readiness` from this directory) before deployment. The
+   check loads `.env.production` when present, confirms PostgreSQL SSL settings,
+   sends an authenticated `PING` to Redis, checks `MEDUSA_PUBLISHABLE_KEY`, and
+   rejects known development/default secrets without printing any values. The
+   tracked example intentionally contains placeholders and should fail until
+   populated with real production configuration.
+3. Build and start both the API and worker:
 
    ```sh
    docker compose -f docker-compose.prod.yml up -d --build
    ```
 
-3. Check the API at `http://127.0.0.1:9000/health`. Put a TLS-enabled reverse
+4. Check the API at `http://127.0.0.1:9000/health`. Put a TLS-enabled reverse
    proxy in front of this loopback-only listener before serving public traffic.
+
+Configure `MEDUSA_PUBLISHABLE_KEY` and `MEDUSA_BACKEND_URL` in the storefront's
+own deployment environment as well; the readiness command checks that key in
+the environment where it runs.
 
 For quick-dispatch hub alerts, optionally set `QUICK_DISPATCH_WEBHOOK_URL` in
 `.env.production`. The receiver gets `quick_dispatch.order_placed` events

@@ -27,6 +27,14 @@ async function proxyToMedusa(request: NextRequest, context: RouteContext) {
     accept: "application/json",
     "x-publishable-api-key": publishableKey,
   })
+  const cookie = request.headers.get("cookie")
+  const authorization = request.headers.get("authorization")
+  if (cookie) {
+    headers.set("cookie", cookie)
+  }
+  if (authorization) {
+    headers.set("authorization", authorization)
+  }
   const contentType = request.headers.get("content-type")
   if (contentType) {
     headers.set("content-type", contentType)
@@ -43,12 +51,17 @@ async function proxyToMedusa(request: NextRequest, context: RouteContext) {
       cache: "no-store",
     })
 
+    const responseHeaders = new Headers({
+      "content-type":
+        upstream.headers.get("content-type") ?? "application/json",
+    })
+    for (const setCookie of upstream.headers.getSetCookie()) {
+      responseHeaders.append("set-cookie", setCookie)
+    }
+
     return new Response(upstream.body, {
       status: upstream.status,
-      headers: {
-        "content-type":
-          upstream.headers.get("content-type") ?? "application/json",
-      },
+      headers: responseHeaders,
     })
   } catch {
     return Response.json(

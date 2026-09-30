@@ -20,4 +20,12 @@ The browser calls the same-origin `/api/medusa/*` proxy. The proxy forwards requ
 
 The delivery selector accepts an address and GPS coordinates. Address geocoding is not configured; use the browser location control or enter coordinates from your address source. Coverage is checked through `POST /store/delivery-coverage`.
 
-WhatsApp checkout includes the item subtotal, bottle deposits, the number of empty returnable bottles to collect, the delivery address and coordinates, the shipping amount currently present on the cart, and the cart total. If no shipping method has been selected, the message labels delivery and the total as pending confirmation. Since `NEXT_PUBLIC_WHATSAPP_PHONE` is inlined during the production build, configure it before running `npm run build`.
+WhatsApp checkout collects the recipient's full name and contact phone, an optional delivery reference, and a payment method. Cash checkout offers quick payment amounts, calculates change, and prevents confirmation when the entered amount is below the order total. The WhatsApp message includes the item subtotal, bottle deposits, empty returnable bottles to collect, cold-item indications, delivery address and Google Maps link, payment details, shipping amount, and amount to collect. If no shipping method has been selected, the message labels delivery as pending confirmation. Since `NEXT_PUBLIC_WHATSAPP_PHONE` is inlined during the production build, configure it before running `npm run build`.
+
+## Install as a PWA
+
+The App Router manifest is available at `/manifest.webmanifest`; install icons are in `public/`. On supported Android browsers, the mobile install banner opens the native install prompt. On iPhone and iPad, tap **Instalar**, then use Share → **Agregar a la pantalla de inicio**. Production installs require HTTPS; localhost is supported for development. The app does not currently cache pages for offline use.
+
+## Responsible delivery
+
+Visitors must confirm they are at least 18 before interacting with the storefront. The confirmation is stored in a first-party cookie and local storage. Delivery runs Wednesday through Sunday, 17:00–02:00 in `America/Guayaquil`; the header shows the current status, and WhatsApp checkout remains disabled outside delivery hours. Customers are reminded that the courier will request their original physical ID at delivery.

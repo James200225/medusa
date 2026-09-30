@@ -8,7 +8,8 @@
   "scripts": {
     "build": "medusa build --no-lint",
     "start": "medusa start --host 0.0.0.0",
-    "start:worker": "medusa start --host 0.0.0.0"
+    "start:worker": "medusa start --host 0.0.0.0",
+    "check:prod-readiness": "node scripts/check-prod-readiness.mjs"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "workspace:*",

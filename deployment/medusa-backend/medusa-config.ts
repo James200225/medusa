@@ -10,6 +10,39 @@ const requiredEnv = (key: string) => {
   return value
 }
 
+const requiredCorsOrigins = (key: string) => {
+  const origins = requiredEnv(key)
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+
+  if (!origins.length) {
+    throw new Error(`${key} must contain at least one allowed origin`)
+  }
+
+  for (const origin of origins) {
+    if (origin === "*") {
+      continue
+    }
+
+    let parsedOrigin: URL
+    try {
+      parsedOrigin = new URL(origin)
+    } catch {
+      throw new Error(`${key} contains an invalid origin`)
+    }
+
+    if (
+      !["http:", "https:"].includes(parsedOrigin.protocol) ||
+      parsedOrigin.origin !== origin
+    ) {
+      throw new Error(`${key} entries must be HTTP(S) origins without paths`)
+    }
+  }
+
+  return origins.join(",")
+}
+
 const redisUrl = requiredEnv("REDIS_URL")
 
 export default defineConfig({
@@ -17,9 +50,9 @@ export default defineConfig({
     databaseUrl: requiredEnv("DATABASE_URL"),
     redisUrl,
     http: {
-      storeCors: requiredEnv("STORE_CORS"),
-      adminCors: requiredEnv("ADMIN_CORS"),
-      authCors: requiredEnv("AUTH_CORS"),
+      storeCors: requiredCorsOrigins("STORE_CORS"),
+      adminCors: requiredCorsOrigins("ADMIN_CORS"),
+      authCors: requiredCorsOrigins("AUTH_CORS"),
       jwtSecret: requiredEnv("JWT_SECRET"),
       cookieSecret: requiredEnv("COOKIE_SECRET"),
     },

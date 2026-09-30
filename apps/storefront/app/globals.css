@@ -256,6 +256,41 @@ button:disabled {
   box-shadow: 0 0 10px #a76cff;
 }
 
+.store-hours-badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.store-hours-open {
+  background: #183c2a;
+  color: #a5edbd;
+}
+
+.store-hours-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #55d77c;
+  box-shadow: 0 0 8px rgb(85 215 124 / 60%);
+}
+
+.store-hours-closed {
+  background: #403619;
+  color: #ffe58b;
+}
+
+.store-hours-pending {
+  background: #26232b;
+  color: #d6d3da;
+}
+
 .promise-separator {
   margin-inline: 2px;
   color: #76717d;
@@ -1403,6 +1438,7 @@ button:disabled {
   width: min(440px, 100%);
   height: 100%;
   flex-direction: column;
+  overflow-y: auto;
   padding: 25px;
   background: #fff;
   box-shadow: -18px 0 60px rgb(0 0 0 / 24%);
@@ -1603,6 +1639,143 @@ button:disabled {
   line-height: 1.5;
 }
 
+.age-delivery-warning {
+  margin: 7px 0;
+  padding: 10px 12px;
+  border: 1px solid #f0d88c;
+  border-radius: 8px;
+  background: #fff8e4;
+  color: #5e4a12;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.checkout-fields {
+  display: grid;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.checkout-field {
+  display: grid;
+  gap: 5px;
+  color: #403b47;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.checkout-field input,
+.checkout-field textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 11px;
+  border: 1px solid #ded9e4;
+  border-radius: 8px;
+  outline: 0;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.checkout-field input:focus,
+.checkout-field textarea:focus {
+  border-color: #a37ae3;
+  box-shadow: 0 0 0 3px rgb(117 56 223 / 10%);
+}
+
+.payment-method-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.payment-method-field legend {
+  margin-bottom: 7px;
+  color: #403b47;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.payment-method-option {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid #e5e0e9;
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.payment-method-option:has(input:checked) {
+  border-color: #a47ce5;
+  background: #faf7ff;
+}
+
+.payment-method-option input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  accent-color: var(--purple);
+}
+
+.payment-method-option > span {
+  display: grid;
+  gap: 3px;
+}
+
+.payment-method-option strong {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.payment-method-option small {
+  color: #77717e;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.cash-payment-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.cash-quick-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cash-quick-amount {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #dfd4ee;
+  border-radius: 999px;
+  background: #f7f2ff;
+  color: #5b2bad;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cash-change {
+  margin: 0;
+  color: #277548;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cash-change-short {
+  color: #a13939;
+}
+
 .drawer-continue {
   min-height: 34px;
   margin-top: 6px;
@@ -1611,6 +1784,180 @@ button:disabled {
   color: #6e6874;
   font-size: 10px;
   font-weight: 600;
+}
+
+.age-gated-content {
+  display: contents;
+}
+
+.age-gate-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  overflow-y: auto;
+  place-items: center;
+  padding: 20px;
+  background: rgb(8 7 10 / 88%);
+  backdrop-filter: blur(10px);
+}
+
+.age-gate-dialog {
+  width: min(430px, 100%);
+  padding: 34px;
+  border: 1px solid #3b3347;
+  border-radius: 18px;
+  background: #151319;
+  box-shadow: 0 24px 90px rgb(0 0 0 / 48%);
+  color: #fff;
+  text-align: center;
+}
+
+.age-gate-mark {
+  display: block;
+  margin-bottom: 23px;
+  font-family: "Manrope", sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -2px;
+}
+
+.age-gate-mark span {
+  color: #ae73ff;
+}
+
+.age-gate-dialog .eyebrow {
+  color: #c39aff;
+}
+
+.age-gate-dialog h1 {
+  margin: 13px 0 9px;
+  font-family: "Manrope", sans-serif;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+.age-gate-dialog > p {
+  margin: 0;
+  color: #d0cbd5;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.age-gate-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.age-gate-actions button {
+  min-height: 48px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.age-gate-confirm {
+  border: 0;
+  background: var(--purple);
+  color: #fff;
+}
+
+.age-gate-deny {
+  border: 1px solid #514b58;
+  background: transparent;
+  color: #e0dce5;
+}
+
+.age-gate-dialog .age-gate-blocked {
+  margin-top: 21px;
+  padding: 13px;
+  border: 1px solid #8b3941;
+  border-radius: 9px;
+  background: #321b20;
+  color: #ffd5d7;
+  font-size: 13px;
+}
+
+.install-prompt {
+  position: fixed;
+  z-index: 15;
+  right: 16px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  left: 16px;
+  display: flex;
+  max-width: 520px;
+  align-items: center;
+  gap: 11px;
+  margin-inline: auto;
+  padding: 12px;
+  border: 1px solid #3a3049;
+  border-radius: 14px;
+  background: #17131e;
+  box-shadow: 0 10px 35px rgb(11 8 17 / 35%);
+  color: #fff;
+}
+
+.install-prompt-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: #2e2042;
+  color: #d1b4ff;
+}
+
+.install-prompt-icon svg {
+  width: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.install-prompt-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.install-prompt-copy strong {
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.install-prompt-copy p {
+  margin: 5px 0 0;
+  color: #d0c8da;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.install-prompt-action {
+  min-width: 78px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--purple);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.install-prompt-dismiss {
+  align-self: flex-start;
+  margin: -5px -5px 0 0;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #b8b1c1;
+  font-size: 19px;
+  line-height: 1;
 }
 
 @media (max-width: 900px) {
@@ -2007,6 +2354,18 @@ button:disabled {
 }
 
 @media (max-width: 639px) {
+  .age-gate-dialog {
+    padding: 28px 22px;
+  }
+
+  .age-gate-dialog h1 {
+    font-size: 22px;
+  }
+
+  .install-prompt {
+    bottom: calc(82px + env(safe-area-inset-bottom));
+  }
+
   .delivery-select {
     min-height: 48px;
     padding: 9px 12px;

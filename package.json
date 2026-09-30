@@ -147,6 +147,7 @@
     "test:integration:packages": "turbo run test:integration --concurrency=1 --no-daemon --no-cache --force --filter='./packages/core/*' --filter='./packages/medusa' --filter='./packages/modules/*' --filter='./packages/modules/providers/*'",
     "test:integration:http": "turbo run test:integration:chunk --no-daemon --no-cache --force --filter=integration-tests-http",
     "test:integration:modules": "turbo run test:integration:chunk --no-daemon --no-cache --force --filter=integration-tests-modules",
+    "check:prod-readiness": "node deployment/medusa-backend/scripts/check-prod-readiness.mjs",
     "generate:http-types": "yarn workspace @medusajs/http-types-generator generate:http-types",
     "validate:http-types": "yarn workspace @medusajs/http-types-generator validate:http-types",
     "openapi:generate": "yarn ./packages/cli/oas/oas-github-ci run ci --with-full-file",
