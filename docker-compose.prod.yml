@@ -1,0 +1,50 @@
+services:
+  backend:
+    image: ${MEDUSA_IMAGE:-medusa-backend:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 9000
+      MEDUSA_WORKER_MODE: server
+    ports:
+      - "127.0.0.1:${MEDUSA_PORT:-9000}:9000"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:9000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+  worker:
+    image: ${MEDUSA_IMAGE:-medusa-backend:local}
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      MEDUSA_WORKER_MODE: worker
+    command: ["npm", "run", "start:worker"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"

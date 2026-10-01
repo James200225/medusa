@@ -1,0 +1,33 @@
+{
+  "name": "@medusajs/production-backend",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "build": "medusa build --no-lint",
+    "start": "medusa start --host 0.0.0.0",
+    "start:worker": "medusa start --host 0.0.0.0",
+    "check:prod-readiness": "node scripts/check-prod-readiness.mjs"
+  },
+  "dependencies": {
+    "@medusajs/admin-sdk": "workspace:*",
+    "@medusajs/admin-shared": "workspace:*",
+    "@medusajs/cache-redis": "workspace:*",
+    "@medusajs/cli": "workspace:*",
+    "@medusajs/dashboard": "workspace:*",
+    "@medusajs/event-bus-redis": "workspace:*",
+    "@medusajs/framework": "workspace:*",
+    "@medusajs/medusa": "workspace:*",
+    "@medusajs/ui": "workspace:*",
+    "@medusajs/workflow-engine-redis": "workspace:*",
+    "@tanstack/react-query": "5.64.2",
+    "i18next": "23.7.11",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-i18next": "13.5.0",
+    "react-router-dom": "7.18.2",
+    "zod": "4.2.0"
+  }
+}

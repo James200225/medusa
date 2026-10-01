@@ -17,6 +17,7 @@ import { adminNotificationRoutesMiddlewares } from "./admin/notifications/middle
 import { adminOrderChangesRoutesMiddlewares } from "./admin/order-changes/middlewares"
 import { adminOrderEditRoutesMiddlewares } from "./admin/order-edits/middlewares"
 import { adminOrderRoutesMiddlewares } from "./admin/orders/middlewares"
+import { adminQuickDispatchRoutesMiddlewares } from "./admin/quick-dispatch/middlewares"
 import { adminPaymentCollectionsMiddlewares } from "./admin/payment-collections/middlewares"
 import { adminPaymentRoutesMiddlewares } from "./admin/payments/middlewares"
 import { adminPriceListsRoutesMiddlewares } from "./admin/price-lists/middlewares"
@@ -58,6 +59,7 @@ import { storeCartRoutesMiddlewares } from "./store/carts/middlewares"
 import { storeCollectionRoutesMiddlewares } from "./store/collections/middlewares"
 import { storeCurrencyRoutesMiddlewares } from "./store/currencies/middlewares"
 import { storeCustomerRoutesMiddlewares } from "./store/customers/middlewares"
+import { storeDeliveryCoverageRoutesMiddlewares } from "./store/delivery-coverage/middlewares"
 import { storeRoutesMiddlewares } from "./store/middlewares"
 import { storeOrderRoutesMiddlewares } from "./store/orders/middlewares"
 import { storePaymentCollectionsMiddlewares } from "./store/payment-collections/middlewares"
@@ -118,6 +120,7 @@ export default defineMiddlewares([
   ...adminCurrencyRoutesMiddlewares,
   ...adminLocalesRoutesMiddlewares,
   ...storeCurrencyRoutesMiddlewares,
+  ...storeDeliveryCoverageRoutesMiddlewares,
   ...adminProductRoutesMiddlewares,
   ...adminPaymentRoutesMiddlewares,
   ...adminPriceListsRoutesMiddlewares,
@@ -136,6 +139,7 @@ export default defineMiddlewares([
   ...adminFulfillmentSetsRoutesMiddlewares,
   ...adminNotificationRoutesMiddlewares,
   ...adminOrderRoutesMiddlewares,
+  ...adminQuickDispatchRoutesMiddlewares,
   ...adminReservationRoutesMiddlewares,
   ...adminProductCategoryRoutesMiddlewares,
   ...adminShippingProfilesMiddlewares,

@@ -3127,7 +3127,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@medusajs/admin-sdk@2.21.2, @medusajs/admin-sdk@workspace:packages/admin/admin-sdk":
+"@medusajs/admin-sdk@2.21.2, @medusajs/admin-sdk@workspace:*, @medusajs/admin-sdk@workspace:packages/admin/admin-sdk":
   version: 0.0.0-use.local
   resolution: "@medusajs/admin-sdk@workspace:packages/admin/admin-sdk"
   dependencies:
@@ -3136,7 +3136,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@medusajs/admin-shared@2.21.2, @medusajs/admin-shared@workspace:packages/admin/admin-shared":
+"@medusajs/admin-shared@2.21.2, @medusajs/admin-shared@workspace:*, @medusajs/admin-shared@workspace:packages/admin/admin-shared":
   version: 0.0.0-use.local
   resolution: "@medusajs/admin-shared@workspace:packages/admin/admin-shared"
   languageName: unknown
@@ -3276,7 +3276,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@medusajs/cache-redis@2.21.2, @medusajs/cache-redis@workspace:packages/modules/cache-redis":
+"@medusajs/cache-redis@2.21.2, @medusajs/cache-redis@workspace:*, @medusajs/cache-redis@workspace:packages/modules/cache-redis":
   version: 0.0.0-use.local
   resolution: "@medusajs/cache-redis@workspace:packages/modules/cache-redis"
   dependencies:
@@ -3326,7 +3326,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@medusajs/cli@2.21.2, @medusajs/cli@workspace:packages/cli/medusa-cli":
+"@medusajs/cli@2.21.2, @medusajs/cli@workspace:*, @medusajs/cli@workspace:packages/cli/medusa-cli":
   version: 0.0.0-use.local
   resolution: "@medusajs/cli@workspace:packages/cli/medusa-cli"
   dependencies:
@@ -3393,7 +3393,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@medusajs/dashboard@2.21.2, @medusajs/dashboard@workspace:packages/admin/dashboard":
+"@medusajs/dashboard@2.21.2, @medusajs/dashboard@workspace:*, @medusajs/dashboard@workspace:packages/admin/dashboard":
   version: 0.0.0-use.local
   resolution: "@medusajs/dashboard@workspace:packages/admin/dashboard"
   dependencies:
@@ -4061,6 +4061,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@medusajs/production-backend@workspace:deployment/medusa-backend":
+  version: 0.0.0-use.local
+  resolution: "@medusajs/production-backend@workspace:deployment/medusa-backend"
+  dependencies:
+    "@medusajs/admin-sdk": "workspace:*"
+    "@medusajs/admin-shared": "workspace:*"
+    "@medusajs/cache-redis": "workspace:*"
+    "@medusajs/cli": "workspace:*"
+    "@medusajs/dashboard": "workspace:*"
+    "@medusajs/event-bus-redis": "workspace:*"
+    "@medusajs/framework": "workspace:*"
+    "@medusajs/medusa": "workspace:*"
+    "@medusajs/ui": "workspace:*"
+    "@medusajs/workflow-engine-redis": "workspace:*"
+    "@tanstack/react-query": 5.64.2
+    i18next: 23.7.11
+    react: 18.3.1
+    react-dom: 18.3.1
+    react-i18next: 13.5.0
+    react-router-dom: 7.18.2
+    zod: 4.2.0
+  languageName: unknown
+  linkType: soft
+
 "@medusajs/promotion@2.21.2, @medusajs/promotion@workspace:^, @medusajs/promotion@workspace:packages/modules/promotion":
   version: 0.0.0-use.local
   resolution: "@medusajs/promotion@workspace:packages/modules/promotion"
@@ -4281,7 +4305,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@medusajs/ui@4.2.6, @medusajs/ui@workspace:packages/design-system/ui":
+"@medusajs/ui@4.2.6, @medusajs/ui@workspace:*, @medusajs/ui@workspace:packages/design-system/ui":
   version: 0.0.0-use.local
   resolution: "@medusajs/ui@workspace:packages/design-system/ui"
   dependencies:
@@ -4363,7 +4387,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@medusajs/workflow-engine-redis@2.21.2, @medusajs/workflow-engine-redis@workspace:packages/modules/workflow-engine-redis":
+"@medusajs/workflow-engine-redis@2.21.2, @medusajs/workflow-engine-redis@workspace:*, @medusajs/workflow-engine-redis@workspace:packages/modules/workflow-engine-redis":
   version: 0.0.0-use.local
   resolution: "@medusajs/workflow-engine-redis@workspace:packages/modules/workflow-engine-redis"
   dependencies:
@@ -21375,6 +21399,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-dom@npm:18.3.1, react-dom@npm:^18.3.1":
+  version: 18.3.1
+  resolution: "react-dom@npm:18.3.1"
+  dependencies:
+    loose-envify: ^1.1.0
+    scheduler: ^0.23.2
+  peerDependencies:
+    react: ^18.3.1
+  checksum: a752496c1941f958f2e8ac56239172296fcddce1365ce45222d04a1947e0cc5547df3e8447f855a81d6d39f008d7c32eab43db3712077f09e3f67c4874973e85
+  languageName: node
+  linkType: hard
+
 "react-dom@npm:^17.0.1":
   version: 17.0.2
   resolution: "react-dom@npm:17.0.2"
@@ -21385,18 +21421,6 @@ __metadata:
   peerDependencies:
     react: 17.0.2
   checksum: 51abbcb72450fe527ebf978c3bc989ba266630faaa53f47a2fae5392369729e8de62b2e4683598cbe651ea7873cd34ec7d5127e2f50bf4bfe6bd0c3ad9bddcb0
-  languageName: node
-  linkType: hard
-
-"react-dom@npm:^18.3.1":
-  version: 18.3.1
-  resolution: "react-dom@npm:18.3.1"
-  dependencies:
-    loose-envify: ^1.1.0
-    scheduler: ^0.23.2
-  peerDependencies:
-    react: ^18.3.1
-  checksum: a752496c1941f958f2e8ac56239172296fcddce1365ce45222d04a1947e0cc5547df3e8447f855a81d6d39f008d7c32eab43db3712077f09e3f67c4874973e85
   languageName: node
   linkType: hard
 
@@ -21647,6 +21671,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react@npm:18.3.1, react@npm:^18.3.1":
+  version: 18.3.1
+  resolution: "react@npm:18.3.1"
+  dependencies:
+    loose-envify: ^1.1.0
+  checksum: 283e8c5efcf37802c9d1ce767f302dd569dd97a70d9bb8c7be79a789b9902451e0d16334b05d73299b20f048cbc3c7d288bbbde10b701fa194e2089c237dbea3
+  languageName: node
+  linkType: hard
+
 "react@npm:^17.0.1":
   version: 17.0.2
   resolution: "react@npm:17.0.2"
@@ -21654,15 +21687,6 @@ __metadata:
     loose-envify: ^1.1.0
     object-assign: ^4.1.1
   checksum: 07ae8959acf1596f0550685102fd6097d461a54a4fd46a50f88a0cd7daaa97fdd6415de1dcb4bfe0da6aa43221a6746ce380410fa848acc60f8ac41f6649c148
-  languageName: node
-  linkType: hard
-
-"react@npm:^18.3.1":
-  version: 18.3.1
-  resolution: "react@npm:18.3.1"
-  dependencies:
-    loose-envify: ^1.1.0
-  checksum: 283e8c5efcf37802c9d1ce767f302dd569dd97a70d9bb8c7be79a789b9902451e0d16334b05d73299b20f048cbc3c7d288bbbde10b701fa194e2089c237dbea3
   languageName: node
   linkType: hard
 

@@ -1,0 +1,203 @@
+name: Build and deploy Medusa backend
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: medusa
+          POSTGRES_PASSWORD: medusa
+          POSTGRES_DB: medusa_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U medusa -d medusa_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: development
+      DATABASE_URL: postgres://medusa:medusa@127.0.0.1:5432/medusa_e2e
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: e2e-only-jwt-secret-not-used-in-production
+      COOKIE_SECRET: e2e-only-cookie-secret-not-used-in-production
+      STORE_CORS: http://127.0.0.1:3100
+      ADMIN_CORS: http://127.0.0.1:9000
+      AUTH_CORS: http://127.0.0.1:3100,http://127.0.0.1:9000
+      S3_BUCKET: medusa-e2e
+      S3_REGION: us-east-1
+      S3_FILE_URL: http://127.0.0.1:9000/static
+      S3_ACCESS_KEY_ID: e2e-only-access-key
+      S3_SECRET_ACCESS_KEY: e2e-only-secret-key
+      MEDUSA_BACKEND_URL: http://127.0.0.1:9000
+      MEDUSA_PUBLISHABLE_KEY: pk_e2e_mocked_store_api
+      PORT: 9000
+      MEDUSA_WORKER_MODE: server
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Yarn
+        run: corepack enable
+
+      - name: Install monorepo dependencies
+        run: yarn install --immutable
+
+      - name: Build Medusa packages and production backend
+        run: |
+          yarn build
+          npm run build --prefix deployment/medusa-backend
+
+      - name: Install storefront dependencies
+        run: npm ci --prefix apps/storefront
+
+      - name: Install Playwright browsers
+        working-directory: apps/storefront
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Run database migrations
+        working-directory: deployment/medusa-backend
+        run: yarn medusa db:migrate
+
+      - name: Seed the TaDa catalog
+        working-directory: deployment/medusa-backend
+        run: yarn medusa exec ../../packages/medusa/src/scripts/seed-tada.ts
+
+      - name: Start the Medusa backend
+        run: |
+          nohup npm run start --prefix deployment/medusa-backend > "$RUNNER_TEMP/medusa-backend.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/medusa-backend.pid"
+
+      - name: Wait for the Medusa API
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:9000/health > /dev/null; then
+              echo "Medusa API is healthy."
+              exit 0
+            fi
+            sleep 5
+          done
+          cat "$RUNNER_TEMP/medusa-backend.log"
+          echo "Medusa API did not become healthy."
+          exit 1
+
+      - name: Run storefront E2E tests
+        run: npm run test:e2e --prefix apps/storefront
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/storefront/playwright-report/
+            apps/storefront/test-results/
+            ${{ runner.temp }}/medusa-backend.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  build-and-publish:
+    needs: e2e-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}-backend
+          tags: |
+            type=sha,prefix=sha-,format=long
+            type=raw,value=latest
+
+      - name: Build and publish production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-vps:
+    needs: build-and-publish
+    if: ${{ vars.DEPLOY_SSH_HOST != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out deployment configuration
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_PRIVATE_KEY" || { echo "Missing DEPLOY_SSH_PRIVATE_KEY"; exit 1; }
+          test -n "$SSH_KNOWN_HOSTS" || { echo "Missing DEPLOY_SSH_KNOWN_HOSTS"; exit 1; }
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+
+      - name: Deploy image to VPS
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_SSH_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_SSH_USER }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_SSH_PORT }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          IMAGE: ghcr.io/${{ github.repository }}-backend:sha-${{ github.sha }}
+        run: |
+          test -n "$DEPLOY_USER" || { echo "Missing repository variable DEPLOY_SSH_USER"; exit 1; }
+          test -n "$DEPLOY_PATH" || { echo "Missing repository variable DEPLOY_PATH"; exit 1; }
+          port="${DEPLOY_PORT:-22}"
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          ssh -i "$HOME/.ssh/id_ed25519" -p "$port" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$target" "mkdir -p '$DEPLOY_PATH'"
+          scp -i "$HOME/.ssh/id_ed25519" -P "$port" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes docker-compose.prod.yml "$target:$DEPLOY_PATH/docker-compose.prod.yml"
+          ssh -i "$HOME/.ssh/id_ed25519" -p "$port" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$target" \
+            "cd '$DEPLOY_PATH' && MEDUSA_IMAGE='$IMAGE' docker compose -f docker-compose.prod.yml pull && MEDUSA_IMAGE='$IMAGE' docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans"
