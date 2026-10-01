@@ -516,22 +516,26 @@ function LocationDialog({
 
 function CartDrawer({
   cart,
+  products,
   location,
   storeHours,
   notice,
   onClose,
   onQuantityChange,
+  onReturnsBottleChange,
   onCheckout,
   busyLineId,
   checkoutDetails,
   onCheckoutDetailsChange,
 }: {
   cart: StoreCart | null
+  products: StoreProduct[]
   location: SelectedLocation | null
   storeHours: StoreHoursStatus | null
   notice: string
   onClose: () => void
   onQuantityChange: (line: CartLine, quantity: number) => void
+  onReturnsBottleChange: (product: StoreProduct, returnsBottle: boolean) => void
   onCheckout: () => void
   busyLineId: string | null
   checkoutDetails: CheckoutDetails
@@ -603,6 +607,9 @@ function CartDrawer({
               {items.map((item) => {
                 const isDeposit =
                   item.metadata?.returnable_packaging_deposit === true
+                const product = products.find(
+                  (candidate) => candidate.id === item.product_id
+                )
                 return (
                   <div className="cart-line" key={item.id}>
                     <div className="cart-line-image">
@@ -626,6 +633,45 @@ function CartDrawer({
                         <span>Depósito · {item.quantity} envases</span>
                       )}
                       <span>{money(item.unit_price, cart?.currency_code)}</span>
+                      {!isDeposit && product && isReturnable(product) && (
+                        <div
+                          className="return-choice cart-return-choice"
+                          role="group"
+                          aria-label={`¿Tienes envase para ${product.title}?`}
+                        >
+                          <span>¿Tienes envase?</span>
+                          <div className="choice-buttons">
+                            <button
+                              type="button"
+                              className={
+                                item.metadata?.returns_bottle === true
+                                  ? "selected"
+                                  : ""
+                              }
+                              onClick={() =>
+                                onReturnsBottleChange(product, true)
+                              }
+                              disabled={busyLineId === item.id}
+                            >
+                              Sí tengo envase
+                            </button>
+                            <button
+                              type="button"
+                              className={
+                                item.metadata?.returns_bottle !== true
+                                  ? "selected"
+                                  : ""
+                              }
+                              onClick={() =>
+                                onReturnsBottleChange(product, false)
+                              }
+                              disabled={busyLineId === item.id}
+                            >
+                              No tengo envase
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {!isDeposit && (
                       <div className="quantity-control compact">
@@ -1717,11 +1763,13 @@ export default function HomePage() {
       {showCart && (
         <CartDrawer
           cart={cart}
+          products={products}
           location={location}
           storeHours={storeHours}
           notice={notice || cartError}
           onClose={() => setShowCart(false)}
           onQuantityChange={changeCartLineQuantity}
+          onReturnsBottleChange={changeReturnsBottle}
           onCheckout={sendOrderToWhatsApp}
           busyLineId={busyLineId}
           checkoutDetails={checkoutDetails}
